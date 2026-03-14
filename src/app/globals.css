@@ -1,0 +1,82 @@
+/* src/app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --safe-area-inset-top: env(safe-area-inset-top);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom);
+  }
+
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prevent text resize on iOS rotate */
+  body {
+    -webkit-text-size-adjust: 100%;
+  }
+}
+
+@layer components {
+  /* Shimmer loading skeleton */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      theme(colors.earth.100) 0%,
+      theme(colors.earth.50) 50%,
+      theme(colors.earth.100) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.4s infinite;
+  }
+
+  /* Safe area padding for PWA */
+  .safe-top {
+    padding-top: max(env(safe-area-inset-top), 1rem);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 1rem);
+  }
+
+  /* Chat bubble variants */
+  .chat-user {
+    @apply bg-nia-600 text-white rounded-2xl rounded-br-sm px-4 py-3 max-w-[80%] self-end;
+  }
+
+  .chat-ai {
+    @apply bg-white border border-earth-100 text-earth-800 rounded-2xl rounded-bl-sm px-4 py-3 max-w-[85%] self-start shadow-sm;
+  }
+
+  /* Recording pulse indicator */
+  .recording-dot {
+    @apply w-3 h-3 bg-emergency-500 rounded-full animate-recording;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Hide scrollbar but keep scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}

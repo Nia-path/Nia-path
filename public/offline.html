@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NiaPath – Offline</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: #3d2409;
+      color: #fdf8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      text-align: center;
+    }
+    .icon { font-size: 4rem; margin-bottom: 1.5rem; }
+    h1 { font-size: 1.75rem; margin-bottom: 1rem; color: #e8b96e; }
+    p { font-size: 1rem; line-height: 1.6; color: #c0a988; max-width: 340px; }
+    .hint {
+      margin-top: 2rem;
+      padding: 1rem 1.5rem;
+      background: rgba(196,127,34,0.15);
+      border: 1px solid rgba(196,127,34,0.3);
+      border-radius: 12px;
+      font-size: 0.875rem;
+      color: #e8b96e;
+    }
+    button {
+      margin-top: 2rem;
+      padding: 0.875rem 2rem;
+      background: #c47f22;
+      color: #fff;
+      border: none;
+      border-radius: 100px;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="icon">🔒</div>
+  <h1>You are offline</h1>
+  <p>NiaPath is designed to work offline. Some features may be limited until your connection returns.</p>
+  <div class="hint">
+    📋 Your evidence and messages are safely stored on this device and will sync when you reconnect.
+  </div>
+  <button onclick="window.location.reload()">Try Again</button>
+</body>
+</html>
