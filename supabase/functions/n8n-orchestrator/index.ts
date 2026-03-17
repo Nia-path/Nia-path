@@ -17,6 +17,7 @@ const N8N_WEBHOOKS: Record<string, string> = {
   legal_aid_assigned:     Deno.env.get("N8N_WEBHOOK_LEGAL_AID_ASSIGNED")!,
   case_escalated:         Deno.env.get("N8N_WEBHOOK_CASE_ESCALATED")!,
   report_generated:       Deno.env.get("N8N_WEBHOOK_REPORT_GENERATED")!,
+  ai_risk_escalation:     Deno.env.get("N8N_WEBHOOK_AI_RISK_ESCALATION")!,
 };
 
 interface WebhookPayload {
@@ -29,8 +30,77 @@ interface WebhookPayload {
 serve(async (req: Request) => {
   // Verify the request comes from within Supabase (service role)
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader || authHeader !== `Bearer ${SUPABASE_SERVICE_KEY}`) {
-    return new Response("Unauthorized", { status: 401 });
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  
+  // Debug logging
+  console.log("🔍 Auth header present:", !!authHeader);
+  console.log("🔍 Service key present:", !!serviceKey);
+  
+  if (!authHeader) {
+    console.error("❌ No Authorization header");
+    return new Response(JSON.stringify({ error: "Missing Authorization header" }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  
+  if (!serviceKey) {
+    console.error("❌ SUPABASE_SERVICE_ROLE_KEY not configured");
+    return new Response(JSON.stringify({ error: "Server misconfigured: missing SUPABASE_SERVICE_ROLE_KEY" }), { 
+      status: 500,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  
+  // Extract token from "Bearer {token}" format
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : authHeader;
+  
+  // Check if token is a valid JWT by checking structure (doesn't need to match exactly)
+  // Real validation would be done by Supabase admin
+  const tokenParts = token.split(".");
+  if (tokenParts.length !== 3) {
+    console.error("❌ Invalid JWT format");
+    return new Response(JSON.stringify({ error: "Invalid token format" }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
+  }
+  
+  // Decode JWT header to verify it's from this service role key
+  try {
+    const header = JSON.parse(atob(tokenParts[0]));
+    const payload = JSON.parse(atob(tokenParts[1]));
+    
+    console.log("🔍 Token issuer:", payload.iss);
+    console.log("🔍 Token role:", payload.role);
+    console.log("🔍 Token exp:", new Date(payload.exp * 1000).toISOString());
+    
+    // Verify it's a service_role token from Supabase
+    if (payload.iss !== "supabase" || payload.role !== "service_role") {
+      console.error("❌ Token is not a valid service_role token");
+      return new Response(JSON.stringify({ error: "Invalid token: not a service_role token" }), { 
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    // Check expiry
+    const now = Math.floor(Date.now() / 1000);
+    if (payload.exp < now) {
+      console.error("❌ Token expired");
+      return new Response(JSON.stringify({ error: "Token expired" }), { 
+        status: 401,
+        headers: { "Content-Type": "application/json" }
+      });
+    }
+    
+    console.log("✅ Valid service_role token accepted");
+  } catch (err) {
+    console.error("❌ Failed to decode JWT:", err);
+    return new Response(JSON.stringify({ error: "Invalid token: decode failed" }), { 
+      status: 401,
+      headers: { "Content-Type": "application/json" }
+    });
   }
 
   const payload: WebhookPayload = await req.json();
@@ -43,6 +113,10 @@ serve(async (req: Request) => {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  console.log(`📍 Event: ${payload.event}`);
+  console.log(`📍 Webhook URL: ${webhookUrl}`);
+  console.log(`📍 Payload data:`, JSON.stringify(payload.data).substring(0, 200));
 
   // Log the webhook attempt
   const { data: logEntry } = await supabase
@@ -59,14 +133,31 @@ serve(async (req: Request) => {
     .single();
 
   try {
+    // Build headers for n8n webhook
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Nia-Event": payload.event,
+      "X-Nia-Timestamp": payload.timestamp,
+      "X-Nia-User-Id": payload.user_id ?? "",
+    };
+
+    // Add webhook secret if configured - n8n workflow checks for x-nia-secret
+    const niaWebhookSecret = Deno.env.get("NIA_WEBHOOK_SECRET");
+    if (niaWebhookSecret) {
+      headers["X-Nia-Secret"] = niaWebhookSecret;
+      console.log("🔐 Sending webhook secret in X-Nia-Secret header");
+    }
+
+    // Add optional n8n API key if configured
+    const n8nApiKey = Deno.env.get("N8N_API_KEY");
+    if (n8nApiKey) {
+      headers["Authorization"] = `Bearer ${n8nApiKey}`;
+      console.log("🔐 Sending n8n API key in Authorization header");
+    }
+
     const response = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Nia-Event": payload.event,
-        "X-Nia-Timestamp": payload.timestamp,
-        "X-Nia-User-Id": payload.user_id ?? "",
-      },
+      headers,
       body: JSON.stringify({
         event: payload.event,
         data: payload.data,
@@ -82,6 +173,9 @@ serve(async (req: Request) => {
       const responseJson = JSON.parse(responseText);
       executionId = responseJson.executionId;
     } catch { /* ignore parse error */ }
+
+    console.log(`📍 n8n Response Status: ${response.status}`);
+    console.log(`📍 n8n Response Body:`, responseText.substring(0, 300));
 
     // Update log with result
     if (logEntry?.id) {

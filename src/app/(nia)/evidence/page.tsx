@@ -141,7 +141,7 @@ export default function EvidencePage() {
       </div>
 
       {/* Camera / Mic quick capture */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Button
           variant="secondary"
           onClick={() => {
@@ -217,7 +217,7 @@ export default function EvidencePage() {
         </p>
 
         {isLoading ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-32" />)}
           </div>
         ) : !evidenceItems || evidenceItems.length === 0 ? (
@@ -225,7 +225,7 @@ export default function EvidencePage() {
             <FolderLockEmpty />
           </Card>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {evidenceItems.map((item) => (
               <Card key={item.id} hover padding="sm" className="flex flex-col gap-2">
                 <div className="h-24 bg-earth-50 rounded-xl flex items-center justify-center">

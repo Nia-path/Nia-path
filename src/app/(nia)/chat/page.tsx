@@ -105,10 +105,16 @@ export default function ChatPage() {
 
       try {
         const history = messages.map((m) => ({ role: m.role, content: m.content }));
+        
+        // UPDATED: Now passing conversation_id so the backend can trigger n8n workflows
         const res = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: content, history }),
+          body: JSON.stringify({ 
+            message: content, 
+            history,
+            conversation_id: sessionId 
+          }),
         });
 
         if (!res.ok) throw new Error("API error");

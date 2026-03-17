@@ -87,7 +87,7 @@ export default function DashboardPage() {
         <h2 className="text-sm font-semibold text-earth-600 mb-3 uppercase tracking-wide">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {quickActions.map(({ label, icon: Icon, href, color }) => (
             <Link key={href} href={href}>
               <Card hover className="flex items-center gap-3">

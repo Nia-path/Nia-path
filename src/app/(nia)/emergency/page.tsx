@@ -345,7 +345,7 @@ export default function EmergencyPage() {
       {/* Quick dial */}
       <Card>
         <h2 className="text-sm font-semibold text-earth-700 mb-3">Quick Dial</h2>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           {[
             { label: "Police", number: "999" },
             { label: "GBV Hotline", number: "1195" },

@@ -130,29 +130,9 @@ export default function StealthPage() {
         )}
       </header>
 
-      <main className="max-w-md mx-auto px-4 py-6 space-y-5">
+      <main className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 py-6 space-y-5">
 
-        {/* Authenticated but locked — quick access to set up PIN */}
-        {isAuthenticated && !isNiaUnlocked && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-2 flex items-start gap-3">
-            <div className="flex-shrink-0 pt-0.5">
-              <Lock className="w-5 h-5 text-amber-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-sm font-semibold text-amber-900">Secure your account</h3>
-              <p className="text-xs text-amber-700 mt-1">You&apos;re signed in but haven&apos;t set a 6-digit PIN yet. Create one now to unlock Nia Path.</p>
-              <div className="mt-3">
-                <button
-                  onClick={() => setShowSetupModal(true)}
-                  className="inline-flex items-center gap-2 px-3 py-2 bg-amber-600 text-white text-sm rounded-lg"
-                >
-                  Set up PIN
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
+        
         {/* Balance — tap 5× to unlock PIN pad */}
         <div
           className="bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl p-6 text-white select-none cursor-pointer"
@@ -184,7 +164,7 @@ export default function StealthPage() {
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <div className="bg-white rounded-2xl p-4 border border-gray-100">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 bg-green-100 rounded-lg flex items-center justify-center">
@@ -313,8 +293,10 @@ export default function StealthPage() {
         isOpen={showSetupModal}
         onClose={() => setShowSetupModal(false)}
         onSuccess={() => {
-          // reload so Nia unlock state and UI refresh
-          window.location.reload();
+          // Close the modal and let Redux state handle the navigation
+          setShowSetupModal(false);
+          // Router will automatically navigate when isNiaUnlocked becomes true
+          router.push("/dashboard");
         }}
       />
     </div>
