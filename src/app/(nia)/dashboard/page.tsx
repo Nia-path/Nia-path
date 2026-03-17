@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useCases } from "@/hooks/useCases";
-import { useCurrentUser } from "@/store/hooks";
+import { useCurrentUser, useCurrentProfile } from "@/store/hooks";
 import { Card, Skeleton, Badge } from "@/components/ui/Card";
 import { CASE_CATEGORY_LABELS, CASE_CATEGORY_COLORS, formatRelativeTime } from "@/utils";
 import {
@@ -15,6 +15,8 @@ import {
   PlusCircle,
   ChevronRight,
   ShieldCheck,
+  AlertCircle,
+  Lock,
 } from "lucide-react";
 
 const quickActions = [
@@ -26,10 +28,12 @@ const quickActions = [
 
 export default function DashboardPage() {
   const user = useCurrentUser();
+  const profile = useCurrentProfile();
   const { data: cases, isLoading } = useCases();
 
   const activeCases = cases?.filter((c) => c.status !== "closed" && c.status !== "archived") ?? [];
   const criticalCases = cases?.filter((c) => c.ai_risk_level === "critical") ?? [];
+  const hasPinSetup = !!profile?.pin_hash;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -37,13 +41,31 @@ export default function DashboardPage() {
       <div className="pt-2">
         <p className="text-earth-500 text-sm">Welcome back,</p>
         <h1 className="font-heading text-2xl text-earth-900 mt-0.5">
-          {user?.full_name?.split(" ")[0] ?? "Nia Sister"}
+          {profile?.full_name?.split(" ")[0] ?? "Nia Sister"}
         </h1>
         <div className="flex items-center gap-1.5 mt-2">
           <ShieldCheck className="w-4 h-4 text-nia-500" />
           <span className="text-xs text-nia-600 font-medium">Your data is secure and encrypted</span>
         </div>
       </div>
+
+      {/* PIN setup banner for new users */}
+      {!hasPinSetup && (
+        <Link href="/profile">
+          <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-3 hover:border-amber-300 transition-colors cursor-pointer">
+            <div className="flex-shrink-0 pt-0.5">
+              <Lock className="w-5 h-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-amber-900">Set up your security PIN</h3>
+              <p className="text-xs text-amber-700 mt-1">
+                Protect your sensitive data with a 6-digit PIN. Go to your profile to complete setup.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          </div>
+        </Link>
+      )}
 
       {/* Critical alert */}
       {criticalCases.length > 0 && (

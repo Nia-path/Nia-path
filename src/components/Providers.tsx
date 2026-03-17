@@ -1,4 +1,8 @@
 // src/components/Providers.tsx
+// Root provider tree for the entire application.
+// Order matters: Redux must wrap everything, then QueryClient, then AuthProvider.
+// AuthProvider reads from Redux so it must be inside ReduxProvider.
+
 "use client";
 
 import { Provider as ReduxProvider } from "react-redux";
@@ -7,12 +11,16 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "react-hot-toast";
 import { store } from "@/store";
 import { queryClient } from "@/lib/queryClient";
+import { AuthProvider } from "@/components/auth/AuthProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <ReduxProvider store={store}>
       <QueryClientProvider client={queryClient}>
-        {children}
+        {/* AuthProvider bridges Supabase session events into Redux */}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <Toaster
           position="top-center"
           gutter={8}

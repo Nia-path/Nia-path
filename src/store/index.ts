@@ -1,4 +1,7 @@
 // src/store/index.ts
+// Root Redux store. Adds authReducer alongside all existing slices.
+// REPLACE the existing src/store/index.ts with this file.
+
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "./slices/authSlice";
 import casesReducer from "./slices/casesSlice";
@@ -8,7 +11,7 @@ import helpCenterReducer from "./slices/helpCenterSlice";
 
 export const store = configureStore({
   reducer: {
-    auth: authReducer,
+    auth: authReducer,          // ← NEW
     cases: casesReducer,
     evidence: evidenceReducer,
     emergency: emergencyReducer,
@@ -17,7 +20,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // File objects in upload queue are non-serializable — ignore them
+        // File objects in upload queue are non-serializable
         ignoredPaths: ["evidence.uploadQueue"],
         ignoredActions: ["evidence/addToQueue"],
       },

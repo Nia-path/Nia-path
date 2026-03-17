@@ -42,6 +42,11 @@ export function useUploadEvidence() {
       locationLat?: number;
       locationLng?: number;
     }) => {
+      // Check if user is authenticated
+      if (!user) {
+        throw new Error("User not authenticated. Please log in to upload evidence.");
+      }
+
       const uploadId = uuidv4();
 
       dispatch(
@@ -57,12 +62,12 @@ export function useUploadEvidence() {
 
       try {
         // Try online upload first
-        const fileUrl = await uploadEvidenceFile(user!.id, caseId, file);
+        const fileUrl = await uploadEvidenceFile(user.id, caseId, file);
         const capturedAt = new Date().toISOString();
 
         const evidence = await createEvidenceRecord({
           case_id: caseId,
-          user_id: user!.id,
+          user_id: user.id,
           type: evidenceType,
           file_name: file.name,
           file_url: fileUrl,
@@ -78,25 +83,38 @@ export function useUploadEvidence() {
 
         dispatch(updateQueueItem({ id: uploadId, updates: { status: "success", progress: 100 } }));
         return evidence;
-      } catch {
-        // Offline — queue for later sync
-        const buffer = await file.arrayBuffer();
-        await savePendingUpload({
-          id: uploadId,
-          case_id: caseId,
-          file_name: file.name,
-          file_data: buffer,
-          mime_type: file.type,
-          captured_at: new Date().toISOString(),
-          evidence_type: evidenceType,
-          location_lat: locationLat,
-          location_lng: locationLng,
-          synced: false,
-        });
+      } catch (error: any) {
+        // Check if it's a genuine network error or offline
+        const isNetworkError =
+          error?.message?.includes("fetch") ||
+          error?.message?.includes("network") ||
+          error?.message?.includes("timeout") ||
+          (error && typeof error === "object" && !navigator.onLine);
 
-        dispatch(updateQueueItem({ id: uploadId, updates: { status: "pending", progress: 0 } }));
-        toast("Evidence saved offline. Will sync when connected.", { icon: "📶" });
-        return null;
+        if (isNetworkError || !navigator.onLine) {
+          // Offline — queue for later sync
+          const buffer = await file.arrayBuffer();
+          await savePendingUpload({
+            id: uploadId,
+            case_id: caseId,
+            file_name: file.name,
+            file_data: buffer,
+            mime_type: file.type,
+            captured_at: new Date().toISOString(),
+            evidence_type: evidenceType,
+            location_lat: locationLat,
+            location_lng: locationLng,
+            synced: false,
+          });
+
+          dispatch(updateQueueItem({ id: uploadId, updates: { status: "pending", progress: 0 } }));
+          toast("Evidence saved offline. Will sync when connected.", { icon: "📶" });
+          return null;
+        } else {
+          // Actual server error - don't save offline, show real error
+          dispatch(updateQueueItem({ id: uploadId, updates: { status: "error", progress: 0 } }));
+          throw error;
+        }
       } finally {
         dispatch(setIsUploading(false));
       }

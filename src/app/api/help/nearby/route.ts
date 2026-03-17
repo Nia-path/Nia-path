@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 
 export async function GET(req: NextRequest) {
   try {
@@ -36,30 +37,43 @@ export async function GET(req: NextRequest) {
       service_type: type,
       emergency_only: emergency,
       result_limit: limit,
-    });
+    } as any);
 
     if (error) throw error;
 
+    const services = data as Array<{
+      id: string;
+      name: string;
+      address: string;
+      phone: string | null;
+      website: string | null;
+      latitude: number;
+      longitude: number;
+      distance_km: number;
+      service_type: string;
+      is_emergency: boolean;
+    }> | null;
+
     // Log search for analytics (non-blocking)
+    const insertData: Database["public"]["Tables"]["service_searches"]["Insert"] = {
+      user_id: user.id,
+      search_lat: lat,
+      search_lng: lng,
+      radius_km: radius,
+      service_type: type ?? null,
+      results_count: (services ?? []).length,
+    };
+    
     Promise.resolve(
-      supabase
-        .from("service_searches")
-        .insert({
-          user_id: user.id,
-          search_lat: lat,
-          search_lng: lng,
-          radius_km: radius,
-          service_type: type ?? null,
-          results_count: (data ?? []).length,
-        })
+      (supabase.from("service_searches") as any).insert([insertData])
     ).catch(() => {
       // error - silently ignore
     });
 
     return NextResponse.json({
       success: true,
-      services: data ?? [],
-      count: (data ?? []).length,
+      services: services ?? [],
+      count: (services ?? []).length,
       search: { lat, lng, radius_km: radius, type, emergency_only: emergency },
     });
   } catch (err) {

@@ -31,8 +31,8 @@ export async function getCaseById(caseId: string): Promise<Case | null> {
 export async function createCase(
   payload: Pick<Case, "title" | "description" | "category" | "user_id" | "location">
 ): Promise<Case> {
-  const { data, error } = await supabase
-    .from("cases")
+  const { data, error } = await (supabase
+    .from("cases") as any)
     .insert({ ...payload, status: "open", evidence_count: 0 })
     .select()
     .single();
@@ -42,8 +42,8 @@ export async function createCase(
 }
 
 export async function updateCaseStatus(caseId: string, status: Case["status"]): Promise<void> {
-  const { error } = await supabase
-    .from("cases")
+  const { error } = await (supabase
+    .from("cases") as any)
     .update({ status, updated_at: new Date().toISOString() })
     .eq("id", caseId);
 
@@ -66,8 +66,8 @@ export async function getEvidenceByCase(caseId: string): Promise<Evidence[]> {
 export async function createEvidenceRecord(
   payload: Omit<Evidence, "id" | "uploaded_at">
 ): Promise<Evidence> {
-  const { data, error } = await supabase
-    .from("evidence")
+  const { data, error } = await (supabase
+    .from("evidence") as any)
     .insert({ ...payload, uploaded_at: new Date().toISOString() })
     .select()
     .single();
@@ -84,14 +84,15 @@ export async function uploadEvidenceFile(
   const ext = file.name.split(".").pop();
   const path = `${userId}/${caseId}/${Date.now()}.${ext}`;
 
+  // Updated to use the correct private bucket defined in migrations
   const { error } = await supabase.storage
-    .from("evidence")
+    .from("evidence-private")
     .upload(path, file, { cacheControl: "3600", upsert: false });
 
   if (error) throw error;
 
-  const { data } = supabase.storage.from("evidence").getPublicUrl(path);
-  return data.publicUrl;
+  // Return the storage path instead of a public URL since the bucket is private
+  return path;
 }
 
 // ─── Help Services ──────────────────────────────────────────────────────────
@@ -122,8 +123,8 @@ export async function updateUserProfile(
   userId: string,
   updates: Partial<User>
 ): Promise<User> {
-  const { data, error } = await supabase
-    .from("profiles")
+  const { data, error } = await (supabase
+    .from("profiles") as any)
     .update({ ...updates, updated_at: new Date().toISOString() })
     .eq("id", userId)
     .select()
